@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Reality Layer",
+  "version": "1.0.0",
+  "description": "You decide how every website looks and behaves — a personal UI layer on top of every website",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/js/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/html/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/js/content_script.js"],
+      "css": ["src/css/overlay.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "src/assets/icon.svg",
+    "32": "src/assets/icon.svg",
+    "48": "src/assets/icon.svg",
+    "128": "src/assets/icon.svg"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/js/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

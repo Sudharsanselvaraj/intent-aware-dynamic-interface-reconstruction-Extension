@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Mode Builder - Reality Layer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1e1e2e;
+      color: #fff;
+      padding: 24px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .subtitle {
+      color: #a1a1aa;
+      margin-bottom: 24px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      background: #2a2a3e;
+      border: 1px solid #3f3f50;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+    }
+    
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+    
+    textarea {
+      min-height: 120px;
+      font-family: monospace;
+    }
+    
+    .help-text {
+      font-size: 12px;
+      color: #71717a;
+      margin-top: 4px;
+    }
+    
+    .rules-section {
+      background: #2a2a3e;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .rule-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      align-items: center;
+    }
+    
+    .rule-row input:first-child {
+      flex: 2;
+    }
+    
+    .rule-row select {
+      width: 120px;
+      padding: 10px;
+      background: #2a2a3e;
+      border: 1px solid #3f3f50;
+      border-radius: 6px;
+      color: #fff;
+    }
+    
+    .rule-row .remove-btn {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    
+    .add-rule-btn {
+      background: transparent;
+      border: 1px dashed #3f3f50;
+      border-radius: 6px;
+      padding: 12px;
+      color: #a1a1aa;
+      cursor: pointer;
+      width: 100%;
+    }
+    
+    .add-rule-btn:hover {
+      border-color: #6366f1;
+      color: #6366f1;
+    }
+    
+    .domain-section {
+      background: #2a2a3e;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .domain-input {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .domain-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .domain-tag {
+      background: #3f3f50;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .domain-tag button {
+      background: transparent;
+      border: none;
+      color: #a1a1aa;
+      cursor: pointer;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    
+    .btn-primary {
+      background: #6366f1;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid #3f3f50;
+      padding: 12px 24px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Custom Mode Builder</h1>
+  <p class="subtitle">Create your own transformation rules for any website</p>
+  
+  <div class="form-group">
+    <label>Mode Name</label>
+    <input type="text" id="modeName" placeholder="e.g., LinkedIn Cleanup">
+  </div>
+  
+  <div class="form-group">
+    <label>Description</label>
+    <textarea id="modeDescription" placeholder="What does this mode do?"></textarea>
+  </div>
+  
+  <div class="rules-section">
+    <label>Transformation Rules</label>
+    <div id="rulesContainer"></div>
+    <button class="add-rule-btn" id="addRuleBtn">+ Add Rule</button>
+    <p class="help-text">Selector: CSS selector. Action: hide (remove), dim (fade), highlight (outline), style (custom CSS)</p>
+  </div>
+  
+  <div class="domain-section">
+    <label>Apply To Domains</label>
+    <div class="domain-input">
+      <input type="text" id="domainInput" placeholder="e.g., linkedin.com">
+      <button class="btn-secondary" id="addDomainBtn">Add</button>
+    </div>
+    <div class="domain-tags" id="domainTags"></div>
+  </div>
+  
+  <div class="actions">
+    <button class="btn-primary" id="saveBtn">Save Mode</button>
+    <button class="btn-secondary" id="previewBtn">Preview</button>
+    <button class="btn-secondary" id="publishBtn">Publish</button>
+  </div>
+  
+  <script>
+    const domains = new Set();
+    
+    document.getElementById('addRuleBtn').addEventListener('click', addRule);
+    document.getElementById('addDomainBtn').addEventListener('click', addDomain);
+    document.getElementById('saveBtn').addEventListener('click', saveMode);
+    document.getElementById('previewBtn').addEventListener('click', previewMode);
+    document.getElementById('publishBtn').addEventListener('click', publishMode);
+    
+    addRule();
+    
+    function addRule() {
+      const container = document.getElementById('rulesContainer');
+      const row = document.createElement('div');
+      row.className = 'rule-row';
+      row.innerHTML = `
+        <input type="text" placeholder=".class, #id, [attribute]">
+        <select>
+          <option value="hide">Hide</option>
+          <option value="dim">Dim</option>
+          <option value="highlight">Highlight</option>
+          <option value="style">Style</option>
+        </select>
+        <input type="text" placeholder="property: value" style="flex:1">
+        <button class="remove-btn">&times;</button>
+      `;
+      
+      row.querySelector('.remove-btn').addEventListener('click', () => row.remove());
+      container.appendChild(row);
+    }
+    
+    function addDomain() {
+      const input = document.getElementById('domainInput');
+      const domain = input.value.trim();
+      
+      if (domain && !domains.has(domain)) {
+        domains.add(domain);
+        renderDomains();
+        input.value = '';
+      }
+    }
+    
+    function renderDomains() {
+      const tags = document.getElementById('domainTags');
+      tags.innerHTML = '';
+      
+      domains.forEach(domain => {
+        const tag = document.createElement('span');
+        tag.className = 'domain-tag';
+        tag.innerHTML = `
+          ${domain}
+          <button type="button">&times;</button>
+        `;
+        tag.querySelector('button').addEventListener('click', () => {
+          domains.delete(domain);
+          renderDomains();
+        });
+        tags.appendChild(tag);
+      });
+    }
+    
+    function saveMode() {
+      const modeName = document.getElementById('modeName').value;
+      const modeDescription = document.getElementById('modeDescription').value;
+      
+      const rules = [];
+      document.querySelectorAll('.rule-row').forEach(row => {
+        const inputs = row.querySelectorAll('input, select');
+        if (inputs[0].value) {
+          rules.push({
+            selector: inputs[0].value,
+            action: inputs[1].value,
+            value: inputs[2].value
+          });
+        }
+      });
+      
+      const mode = {
+        name: modeName,
+        description: modeDescription,
+        rules,
+        domains: [...domains],
+        createdAt: Date.now()
+      };
+      
+      chrome.storage.sync.get(['customModes'], result => {
+        const customModes = result.customModes || [];
+        customModes.push(mode);
+        chrome.storage.sync.set({ customModes });
+        alert('Mode saved!');
+      });
+    }
+    
+    function previewMode() {
+      alert('Preview feature coming soon - will apply rules temporarily to current page');
+    }
+    
+    function publishMode() {
+      alert('Publish to marketplace - share your mode with other users');
+    }
+  </script>
+</body>
+</html>
