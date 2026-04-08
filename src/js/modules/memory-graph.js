@@ -269,4 +269,10 @@ const MemoryGraph = {
   }
 };
 
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => MemoryGraph.initialize());
+} else {
+  MemoryGraph.initialize();
+}
+
 window.MemoryGraph = MemoryGraph;

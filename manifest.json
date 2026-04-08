@@ -22,20 +22,25 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/js/content_script.js"],
+      "js": [
+        "src/js/modules/dark-pattern-detector.js",
+        "src/js/modules/memory-graph.js",
+        "src/js/modules/intent-inference.js",
+        "src/js/content_script.js"
+      ],
       "css": ["src/css/overlay.css"],
       "run_at": "document_end"
     }
   ],
   "icons": {
-    "16": "src/assets/icon.svg",
-    "32": "src/assets/icon.svg",
-    "48": "src/assets/icon.svg",
-    "128": "src/assets/icon.svg"
+    "16": "src/assets/icon-16.png",
+    "32": "src/assets/icon-32.png",
+    "48": "src/assets/icon-48.png",
+    "128": "src/assets/icon-128.png"
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/js/*"],
+      "resources": ["src/css/overlay.css"],
       "matches": ["<all_urls>"]
     }
   ]

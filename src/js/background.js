@@ -67,6 +67,16 @@ const RealityLayer = {
       case 'SAVE_TO_GRAPH':
         return await this.saveToGraph(message.data);
         
+      case 'TOGGLE_SIDEBAR':
+        return await this.toggleSidebar(sender.tab.id);
+        
+      case 'TOGGLE_COMPARE':
+        return { success: true };
+        
+      case 'PAGE_SCANNED':
+        console.log('[Reality Layer] Page scanned:', message.analysis);
+        return { success: true };
+        
       default:
         return { error: 'Unknown message type' };
     }
@@ -74,10 +84,18 @@ const RealityLayer = {
   
   async analyzePage(tabId, url) {
     try {
+      let pageTitle;
+      try {
+        const response = await chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_TITLE' });
+        pageTitle = response?.title || '';
+      } catch (e) {
+        pageTitle = '';
+      }
+      
       const analysis = {
         url,
         timestamp: Date.now(),
-        pageType: this.classifyPage(url, document?.title),
+        pageType: this.classifyPage(url, pageTitle),
         forms: [],
         elements: {
           headings: [],
@@ -166,6 +184,11 @@ const RealityLayer = {
       return { enabled: false };
     }
     return { enabled: true };
+  },
+  
+  async toggleSidebar(tabId) {
+    await chrome.tabs.sendMessage(tabId, { type: 'TOGGLE_SIDEBAR' });
+    return { success: true };
   },
   
   async setPreferences(prefs) {

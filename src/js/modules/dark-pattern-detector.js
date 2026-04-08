@@ -236,7 +236,7 @@ const DarkPatternDetector = {
       const text = link.textContent || '';
       const href = link.href || '';
       
-      if (this.patterns.darkNavigation.some(p => p.test(text) || p.test(href)))) {
+      if (this.patterns.darkNavigation.some(p => p.test(text) || p.test(href))) {
         const unsubscribe = document.createElement('div');
         unsubscribe.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;';
         document.body.appendChild(unsubscribe);

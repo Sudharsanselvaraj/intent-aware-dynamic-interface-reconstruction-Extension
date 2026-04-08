@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   async function loadState() {
     try {
-      const response = await chrome.runtime.sendMessage({
+      const response = await chrome.tabs.sendMessage(currentTab.id, {
         type: 'GET_STATE'
       });
       

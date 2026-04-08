@@ -7,6 +7,8 @@
     isEnabled: true,
     domObserver: null,
     overlayContainer: null,
+    sidebarVisible: false,
+    sidebarElement: null,
     
     initialize() {
       this.createOverlayContainer();
@@ -48,12 +50,19 @@
             rules: this.activeRules
           };
         
+        case 'GET_PAGE_TITLE':
+          return { title: document.title };
+        
         case 'TOGGLE_VISIBILITY':
           this.toggleElementVisibility(message.selector, message.hidden);
           return { success: true };
         
         case 'UPDATE_STYLE':
           this.applyStyleRules(message.rules);
+          return { success: true };
+        
+        case 'TOGGLE_SIDEBAR':
+          this.toggleSidebar();
           return { success: true };
         
         default:
@@ -179,6 +188,46 @@
       style.id = 'reality-layer-custom-styles';
       style.textContent = rules.join('\n');
       document.head.appendChild(style);
+    },
+    
+    createSidebar() {
+      if (this.sidebarElement) return;
+      
+      this.sidebarElement = document.createElement('div');
+      this.sidebarElement.id = 'reality-layer-sidebar';
+      this.sidebarElement.innerHTML = `
+        <div class="rl-sidebar-header">
+          <span class="rl-sidebar-title">Reality Layer</span>
+          <button class="rl-sidebar-close">×</button>
+        </div>
+        <div class="rl-sidebar-content">
+          <div class="rl-sidebar-section">
+            <h4>Active Mode</h4>
+            <p>${this.currentMode || 'None'}</p>
+          </div>
+          <div class="rl-sidebar-section">
+            <h4>Detected Patterns</h4>
+            <div id="rl-pattern-count">Scanning...</div>
+          </div>
+        </div>
+      `;
+      
+      this.sidebarElement.querySelector('.rl-sidebar-close').addEventListener('click', () => {
+        this.toggleSidebar();
+      });
+      
+      document.body.appendChild(this.sidebarElement);
+    },
+    
+    toggleSidebar() {
+      this.sidebarVisible = !this.sidebarVisible;
+      
+      if (this.sidebarVisible) {
+        this.createSidebar();
+        this.sidebarElement.classList.add('rl-sidebar-visible');
+      } else if (this.sidebarElement) {
+        this.sidebarElement.classList.remove('rl-sidebar-visible');
+      }
     }
   };
   
@@ -217,7 +266,7 @@
     findLabel(input) {
       const id = input.id;
       if (id) {
-        const label = root.querySelector(`label[for="${id}"]`);
+        const label = document.querySelector(`label[for="${id}"]`);
         if (label) return label.textContent;
       }
       const parent = input.closest('label');

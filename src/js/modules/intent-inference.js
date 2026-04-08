@@ -188,7 +188,7 @@ const IntentInference = {
   async saveBehavior() {
     try {
       const result = await chrome.storage.local.get(['behavioralHistory']);
-      const history = result.behavioralHistory || [];
+      let history = result.behavioralHistory || [];
       
       history.push({
         url: window.location.href,
