@@ -2,20 +2,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleBtn = document.getElementById('toggleBtn');
   const statusDot = document.getElementById('statusDot');
   const statusText = document.getElementById('statusText');
-  const modeButtons = document.querySelectorAll('.mode-btn');
-  const compareBtn = document.getElementById('compareBtn');
-  const sidebarBtn = document.getElementById('sidebarBtn');
-  const customBtn = document.getElementById('customBtn');
-  const aiDetectBtn = document.getElementById('aiDetectBtn');
-  const helpLink = document.getElementById('helpLink');
-  
-  const autoSuggestToggle = document.getElementById('autoSuggest');
-  const intentInferenceToggle = document.getElementById('intentInference');
-  const showNotificationsToggle = document.getElementById('showNotifications');
+  const intentButtons = document.querySelectorAll('.intent-btn');
+  const currentIntentIcon = document.getElementById('currentIntentIcon');
+  const currentIntentName = document.getElementById('currentIntentName');
+  const currentIntentDesc = document.getElementById('currentIntentDesc');
   
   let isEnabled = true;
-  let activeMode = 'focus';
+  let currentIntent = 'reading';
   let currentTab = null;
+  
+  const intentIcons = {
+    'reading': '📖',
+    'filling-form': '📝',
+    'applying': '💼',
+    'shopping': '🛒',
+    'researching': '🔬',
+    'skimming': '⚡'
+  };
+  
+  const intentDescriptions = {
+    'reading': 'Slow scroll detected',
+    'filling-form': 'Form interaction detected',
+    'applying': 'Job application page',
+    'shopping': 'Shopping intent detected',
+    'researching': 'Multiple section dwells',
+    'skimming': 'Fast scroll velocity'
+  };
   
   init();
   
@@ -39,42 +51,21 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       
       if (response) {
-        isEnabled = response.enabled !== false;
-        activeMode = response.mode || 'focus';
+        isEnabled = response.isActive !== false;
+        currentIntent = response.intent || 'reading';
         updateUI();
       }
-    } catch (e) {}
-    
-    try {
-      const prefs = await chrome.runtime.sendMessage({
-        type: 'GET_PREFERENCES'
-      });
-      
-      if (prefs) {
-        autoSuggestToggle.checked = prefs.autoSuggest !== false;
-        intentInferenceToggle.checked = prefs.intentInference !== false;
-        showNotificationsToggle.checked = prefs.showNotifications !== false;
-      }
-    } catch (e) {}
+    } catch (e) {
+      console.log('Morphic not loaded yet');
+    }
   }
   
   function setupEventListeners() {
-    toggleBtn.addEventListener('click', toggleLayer);
+    toggleBtn.addEventListener('click', toggleMorphic);
     
-    modeButtons.forEach(btn => {
-      btn.addEventListener('click', () => selectMode(btn.dataset.mode));
+    intentButtons.forEach(btn => {
+      btn.addEventListener('click', () => setIntent(btn.dataset.intent));
     });
-    
-    aiDetectBtn.addEventListener('click', detectWithAI);
-    compareBtn.addEventListener('click', toggleCompare);
-    sidebarBtn.addEventListener('click', toggleSidebar);
-    customBtn.addEventListener('click', openCustomModeBuilder);
-    
-    autoSuggestToggle.addEventListener('change', updatePreferences);
-    intentInferenceToggle.addEventListener('change', updatePreferences);
-    showNotificationsToggle.addEventListener('change', updatePreferences);
-    
-    helpLink.addEventListener('click', openHelp);
   }
   
   function updateUI() {
@@ -90,8 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleBtn.classList.add('off');
     }
     
-    modeButtons.forEach(btn => {
-      if (btn.dataset.mode === activeMode && isEnabled) {
+    currentIntentIcon.textContent = intentIcons[currentIntent] || '📖';
+    currentIntentName.textContent = currentIntent.charAt(0).toUpperCase() + currentIntent.slice(1).replace('-', ' ');
+    currentIntentDesc.textContent = intentDescriptions[currentIntent] || '';
+    
+    intentButtons.forEach(btn => {
+      if (btn.dataset.intent === currentIntent && isEnabled) {
         btn.classList.add('active');
       } else {
         btn.classList.remove('active');
@@ -99,9 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   
-  async function toggleLayer() {
-    const newState = !isEnabled;
-    isEnabled = newState;
+  async function toggleMorphic() {
+    isEnabled = !isEnabled;
     
     if (!currentTab?.id) {
       updateUI();
@@ -110,23 +104,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     try {
       await chrome.tabs.sendMessage(currentTab.id, {
-        type: newState ? 'APPLY_MODE' : 'DISABLE_LAYER',
-        mode: newState ? 'focus' : null
-      });
-    } catch (e) {}
-    
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'TOGGLE_LAYER',
-        tabId: currentTab.id
+        type: isEnabled ? 'ACTIVATE' : 'DEACTIVATE'
       });
     } catch (e) {}
     
     updateUI();
   }
   
-  async function selectMode(mode) {
-    activeMode = mode;
+  async function setIntent(intent) {
+    currentIntent = intent;
     
     if (!currentTab?.id) {
       updateUI();
@@ -135,109 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     try {
       await chrome.tabs.sendMessage(currentTab.id, {
-        type: 'APPLY_MODE',
-        mode: mode,
-        rules: getModeRules(mode)
+        type: 'SET_INTENT',
+        intent: intent
       });
-    } catch (e) {
-      try {
-        await chrome.runtime.sendMessage({
-          type: 'SET_MODE',
-          tabId: currentTab.id,
-          mode: mode,
-          rules: getModeRules(mode)
-        });
-      } catch (e2) {}
-    }
+    } catch (e) {}
     
     updateUI();
-  }
-  
-  function getModeRules(mode) {
-    const rules = {
-      focus: [
-        { selector: '[role="banner"], header, nav, .sidebar, aside', action: 'hide' },
-        { selector: '.ad, .ads, .advertisement', action: 'hide' },
-        { selector: '.popup, .modal', action: 'hide' }
-      ],
-      job: [
-        { selector: 'form input:not([required]), form select:not([required])', action: 'dim' },
-        { selector: 'form input[required], form select[required]', action: 'highlight' }
-      ],
-      learning: [
-        { selector: 'p, li', action: 'addTooltip' },
-        { selector: 'h1, h2, h3', action: 'highlight' }
-      ],
-      research: [
-        { selector: 'main, article', action: 'extractable' }
-      ],
-      checkout: [
-        { selector: '.price', action: 'highlight' },
-        { selector: '[class*="timer"]', action: 'flag' }
-      ],
-      accessibility: [
-        { selector: 'body', action: 'style', property: 'filter', value: 'contrast(1.5)' }
-      ]
-    };
-    
-    return rules[mode] || [];
-  }
-  
-  async function toggleCompare() {
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'TOGGLE_COMPARE'
-      });
-    } catch (e) {
-      console.error('Failed to toggle compare:', e);
-    }
-  }
-  
-  async function toggleSidebar() {
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'TOGGLE_SIDEBAR'
-      });
-    } catch (e) {
-      console.error('Failed to toggle sidebar:', e);
-    }
-  }
-  
-  function openCustomModeBuilder() {
-    const url = chrome.runtime.getURL('src/html/custom_mode.html');
-    chrome.tabs.create({ url });
-  }
-  
-  async function updatePreferences() {
-    try {
-      await chrome.runtime.sendMessage({
-        type: 'SET_PREFERENCES',
-        preferences: {
-          autoSuggest: autoSuggestToggle.checked,
-          intentInference: intentInferenceToggle.checked,
-          showNotifications: showNotificationsToggle.checked
-        }
-      });
-    } catch (e) {
-      console.error('Failed to update preferences:', e);
-    }
-  }
-  
-  async function detectWithAI() {
-    try {
-      const response = await chrome.tabs.sendMessage(currentTab.id, {
-        type: 'DETECT_INTENT'
-      });
-      if (response && response.mode) {
-        await selectMode(response.mode);
-      }
-    } catch (e) {
-      console.error('AI detection failed:', e);
-    }
-  }
-  
-  function openHelp() {
-    const url = 'https://github.com/reality-layer/docs';
-    chrome.tabs.create({ url });
   }
 });

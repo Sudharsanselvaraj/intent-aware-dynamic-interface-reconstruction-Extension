@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Reality Layer",
+  "name": "Morphic",
   "version": "1.0.0",
-  "description": "You decide how every website looks and behaves — a personal UI layer on top of every website",
+  "description": "Live Page Reconstruction Engine - Actual DOM reconstruction based on your intent",
   "permissions": [
     "storage",
     "activeTab",
@@ -22,15 +22,9 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": [
-        "src/js/modules/dark-pattern-detector.js",
-        "src/js/modules/memory-graph.js",
-        "src/js/modules/intent-inference.js",
-        "src/js/modules/gemini-intent-detector.js",
-        "src/js/content_script.js"
-      ],
-      "css": ["src/css/overlay.css"],
-      "run_at": "document_end"
+      "js": ["src/js/morphic.js"],
+      "css": ["src/css/morphic.css"],
+      "run_at": "document_idle"
     }
   ],
   "icons": {
@@ -41,7 +35,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["src/css/overlay.css"],
+      "resources": ["src/css/morphic.css"],
       "matches": ["<all_urls>"]
     }
   ]

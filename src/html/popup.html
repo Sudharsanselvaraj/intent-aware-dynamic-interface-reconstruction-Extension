@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reality Layer</title>
+  <title>Morphic</title>
   <style>
     * {
       margin: 0;
@@ -42,6 +42,11 @@
       font-weight: 600;
     }
     
+    .subtitle {
+      font-size: 11px;
+      color: #a1a1aa;
+    }
+    
     .status-bar {
       padding: 12px 16px;
       background: #2a2a3e;
@@ -77,7 +82,6 @@
       border-radius: 4px;
       font-size: 12px;
       cursor: pointer;
-      transition: background 0.2s;
     }
     
     .toggle-btn:hover {
@@ -88,8 +92,44 @@
       background: #3f3f50;
     }
     
-    .modes-section {
+    .intent-display {
       padding: 16px;
+    }
+    
+    .intent-label {
+      font-size: 12px;
+      color: #a1a1aa;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    
+    .current-intent {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: #2a2a3e;
+      border-radius: 8px;
+      border: 1px solid #3f3f50;
+    }
+    
+    .intent-icon {
+      font-size: 24px;
+    }
+    
+    .intent-name {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .intent-desc {
+      font-size: 11px;
+      color: #a1a1aa;
+    }
+    
+    .intents-section {
+      padding: 0 16px 16px;
     }
     
     .section-title {
@@ -101,18 +141,18 @@
       margin-bottom: 12px;
     }
     
-    .mode-grid {
+    .intent-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
     
-    .mode-btn {
+    .intent-btn {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
-      padding: 12px;
+      gap: 4px;
+      padding: 12px 8px;
       background: #2a2a3e;
       border: 1px solid #3f3f50;
       border-radius: 8px;
@@ -120,190 +160,53 @@
       transition: all 0.2s;
     }
     
-    .mode-btn:hover {
+    .intent-btn:hover {
       border-color: #6366f1;
       background: #3f3f50;
     }
     
-    .mode-btn.active {
+    .intent-btn.active {
       border-color: #6366f1;
       background: rgba(99, 102, 241, 0.2);
     }
     
-    .mode-icon {
-      font-size: 20px;
+    .intent-btn .intent-icon {
+      font-size: 18px;
     }
     
-    .mode-name {
-      font-size: 12px;
+    .intent-btn .intent-label {
+      font-size: 11px;
       color: #fff;
-    }
-    
-    .mode-btn[data-mode="focus"] .mode-icon { color: #6366f1; }
-    .mode-btn[data-mode="job"] .mode-icon { color: #22c55e; }
-    .mode-btn[data-mode="learning"] .mode-icon { color: #06b6d4; }
-    .mode-btn[data-mode="research"] .mode-icon { color: #8b5cf6; }
-    .mode-btn[data-mode="checkout"] .mode-icon { color: #f59e0b; }
-    .mode-btn[data-mode="accessibility"] .mode-icon { color: #ec4899; }
-    
-    .tools-section {
-      padding: 0 16px 16px;
-    }
-    
-    .tool-btn {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px;
-      background: #2a2a3e;
-      border: 1px solid #3f3f50;
-      border-radius: 8px;
-      color: #fff;
-      font-size: 13px;
-      cursor: pointer;
-      margin-bottom: 8px;
-      transition: background 0.2s;
-    }
-    
-    .tool-btn:hover {
-      background: #3f3f50;
-    }
-    
-    .tool-icon {
-      font-size: 16px;
+      text-transform: none;
+      letter-spacing: 0;
+      margin: 0;
     }
     
     .divider {
       height: 1px;
       background: #3f3f50;
-      margin: 8px 16px;
-    }
-    
-    .preferences {
-      padding: 16px;
-    }
-    
-    .pref-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    
-    .pref-label {
-      font-size: 13px;
-      color: #a1a1aa;
-    }
-    
-    .toggle-switch {
-      position: relative;
-      width: 40px;
-      height: 22px;
-    }
-    
-    .toggle-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    
-    .toggle-slider {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background: #3f3f50;
-      border-radius: 22px;
-      transition: 0.2s;
-    }
-    
-    .toggle-slider::before {
-      content: '';
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      left: 2px;
-      bottom: 2px;
-      background: #fff;
-      border-radius: 50%;
-      transition: 0.2s;
-    }
-    
-    .toggle-switch input:checked + .toggle-slider {
-      background: #6366f1;
-    }
-    
-    .toggle-switch input:checked + .toggle-slider::before {
-      transform: translateX(18px);
+      margin: 0 16px 16px;
     }
     
     .footer {
       padding: 12px 16px;
       border-top: 1px solid #3f3f50;
-      display: flex;
-      justify-content: center;
+      text-align: center;
     }
     
-    .footer-link {
-      font-size: 12px;
-      color: #6366f1;
-      text-decoration: none;
-    }
-    
-    .footer-link:hover {
-      text-decoration: underline;
-    }
-    
-    .api-settings {
-      padding: 16px;
-    }
-    
-    .api-key-input {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    
-    .api-key-input input {
-      flex: 1;
-      padding: 8px;
-      background: #2a2a3e;
-      border: 1px solid #3f3f50;
-      border-radius: 4px;
-      color: #fff;
-      font-size: 12px;
-    }
-    
-    .api-key-input input:focus {
-      outline: none;
-      border-color: #6366f1;
-    }
-    
-    .btn-save-api {
-      background: #6366f1;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 4px;
-      color: #fff;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    
-    .api-settings .help-text {
+    .footer-text {
       font-size: 11px;
       color: #71717a;
-      margin-top: 8px;
-    }
-    
-    .api-settings .help-text a {
-      color: #6366f1;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="logo">◈</div>
-    <div class="title">Reality Layer</div>
+    <div>
+      <div class="title">Morphic</div>
+      <div class="subtitle">Live Page Reconstruction</div>
+    </div>
   </div>
   
   <div class="status-bar">
@@ -314,85 +217,53 @@
     <button class="toggle-btn" id="toggleBtn">Disable</button>
   </div>
   
-  <div class="modes-section">
-    <div class="section-title">Modes</div>
-    <div class="mode-grid">
-      <button class="mode-btn" data-mode="focus">
-        <span class="mode-icon">◎</span>
-        <span class="mode-name">Focus</span>
-      </button>
-      <button class="mode-btn" data-mode="job">
-        <span class="mode-icon">◉</span>
-        <span class="mode-name">Job</span>
-      </button>
-      <button class="mode-btn" data-mode="learning">
-        <span class="mode-icon">⬡</span>
-        <span class="mode-name">Learning</span>
-      </button>
-      <button class="mode-btn" data-mode="research">
-        <span class="mode-icon">◎</span>
-        <span class="mode-name">Research</span>
-      </button>
-      <button class="mode-btn" data-mode="checkout">
-        <span class="mode-icon">◈</span>
-        <span class="mode-name">Checkout</span>
-      </button>
-      <button class="mode-btn" data-mode="accessibility">
-        <span class="mode-icon">◈</span>
-        <span class="mode-name">Accessibility</span>
-      </button>
+  <div class="intent-display">
+    <div class="intent-label">Current Intent</div>
+    <div class="current-intent">
+      <span class="intent-icon" id="currentIntentIcon">📖</span>
+      <div>
+        <div class="intent-name" id="currentIntentName">Reading</div>
+        <div class="intent-desc" id="currentIntentDesc">Slow scroll detected</div>
+      </div>
     </div>
-  </div>
-  
-  <div class="tools-section">
-    <button class="tool-btn" id="aiDetectBtn">
-      <span class="tool-icon">⚡</span>
-      <span>AI Detect Intent</span>
-    </button>
-    <button class="tool-btn" id="compareBtn">
-      <span class="tool-icon">⇆</span>
-      <span>Compare Original</span>
-    </button>
-    <button class="tool-btn" id="sidebarBtn">
-      <span class="tool-icon">☰</span>
-      <span>Research Sidebar</span>
-    </button>
-    <button class="tool-btn" id="customBtn">
-      <span class="tool-icon">✎</span>
-      <span>Custom Mode</span>
-    </button>
   </div>
   
   <div class="divider"></div>
   
-  <div class="preferences">
-    <div class="pref-row">
-      <span class="pref-label">Auto-suggest modes</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="autoSuggest" checked>
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="pref-row">
-      <span class="pref-label">Intent inference (AI)</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="intentInference" checked>
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div class="pref-row">
-      <span class="pref-label">Show notifications</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="showNotifications" checked>
-        <span class="toggle-slider"></span>
-      </label>
+  <div class="intents-section">
+    <div class="section-title">Manual Intent</div>
+    <div class="intent-grid">
+      <button class="intent-btn" data-intent="reading">
+        <span class="intent-icon">📖</span>
+        <span class="intent-label">Reading</span>
+      </button>
+      <button class="intent-btn" data-intent="filling-form">
+        <span class="intent-icon">📝</span>
+        <span class="intent-label">Filling Form</span>
+      </button>
+      <button class="intent-btn" data-intent="applying">
+        <span class="intent-icon">💼</span>
+        <span class="intent-label">Applying</span>
+      </button>
+      <button class="intent-btn" data-intent="shopping">
+        <span class="intent-icon">🛒</span>
+        <span class="intent-label">Shopping</span>
+      </button>
+      <button class="intent-btn" data-intent="researching">
+        <span class="intent-icon">🔬</span>
+        <span class="intent-label">Researching</span>
+      </button>
+      <button class="intent-btn" data-intent="skimming">
+        <span class="intent-icon">⚡</span>
+        <span class="intent-label">Skimming</span>
+      </button>
     </div>
   </div>
   
   <div class="divider"></div>
   
   <div class="footer">
-    <a href="#" class="footer-link" id="helpLink">Help & Documentation</a>
+    <div class="footer-text">Auto-detects intent from your behavior</div>
   </div>
   
   <script src="../js/popup.js"></script>
