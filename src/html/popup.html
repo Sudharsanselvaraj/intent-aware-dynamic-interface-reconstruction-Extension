@@ -253,6 +253,51 @@
     .footer-link:hover {
       text-decoration: underline;
     }
+    
+    .api-settings {
+      padding: 16px;
+    }
+    
+    .api-key-input {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    
+    .api-key-input input {
+      flex: 1;
+      padding: 8px;
+      background: #2a2a3e;
+      border: 1px solid #3f3f50;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+    }
+    
+    .api-key-input input:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+    
+    .btn-save-api {
+      background: #6366f1;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    
+    .api-settings .help-text {
+      font-size: 11px;
+      color: #71717a;
+      margin-top: 8px;
+    }
+    
+    .api-settings .help-text a {
+      color: #6366f1;
+    }
   </style>
 </head>
 <body>
@@ -300,6 +345,10 @@
   </div>
   
   <div class="tools-section">
+    <button class="tool-btn" id="aiDetectBtn">
+      <span class="tool-icon">⚡</span>
+      <span>AI Detect Intent</span>
+    </button>
     <button class="tool-btn" id="compareBtn">
       <span class="tool-icon">⇆</span>
       <span>Compare Original</span>
@@ -325,7 +374,7 @@
       </label>
     </div>
     <div class="pref-row">
-      <span class="pref-label">Intent inference</span>
+      <span class="pref-label">Intent inference (AI)</span>
       <label class="toggle-switch">
         <input type="checkbox" id="intentInference" checked>
         <span class="toggle-slider"></span>
@@ -339,6 +388,8 @@
       </label>
     </div>
   </div>
+  
+  <div class="divider"></div>
   
   <div class="footer">
     <a href="#" class="footer-link" id="helpLink">Help & Documentation</a>

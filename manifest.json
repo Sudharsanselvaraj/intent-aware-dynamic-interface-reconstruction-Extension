@@ -26,6 +26,7 @@
         "src/js/modules/dark-pattern-detector.js",
         "src/js/modules/memory-graph.js",
         "src/js/modules/intent-inference.js",
+        "src/js/modules/gemini-intent-detector.js",
         "src/js/content_script.js"
       ],
       "css": ["src/css/overlay.css"],

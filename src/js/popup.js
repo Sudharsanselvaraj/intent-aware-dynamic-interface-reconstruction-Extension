@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const compareBtn = document.getElementById('compareBtn');
   const sidebarBtn = document.getElementById('sidebarBtn');
   const customBtn = document.getElementById('customBtn');
+  const aiDetectBtn = document.getElementById('aiDetectBtn');
   const helpLink = document.getElementById('helpLink');
   
   const autoSuggestToggle = document.getElementById('autoSuggest');
@@ -25,11 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   async function getCurrentTab() {
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    return tabs[0];
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return tab;
   }
   
   async function loadState() {
+    if (!currentTab?.id) return;
+    
     try {
       const response = await chrome.tabs.sendMessage(currentTab.id, {
         type: 'GET_STATE'
@@ -40,7 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
         activeMode = response.mode || 'focus';
         updateUI();
       }
-      
+    } catch (e) {}
+    
+    try {
       const prefs = await chrome.runtime.sendMessage({
         type: 'GET_PREFERENCES'
       });
@@ -50,9 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         intentInferenceToggle.checked = prefs.intentInference !== false;
         showNotificationsToggle.checked = prefs.showNotifications !== false;
       }
-    } catch (e) {
-      console.error('Failed to load state:', e);
-    }
+    } catch (e) {}
   }
   
   function setupEventListeners() {
@@ -62,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => selectMode(btn.dataset.mode));
     });
     
+    aiDetectBtn.addEventListener('click', detectWithAI);
     compareBtn.addEventListener('click', toggleCompare);
     sidebarBtn.addEventListener('click', toggleSidebar);
     customBtn.addEventListener('click', openCustomModeBuilder);
@@ -96,33 +100,57 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   async function toggleLayer() {
-    try {
-      isEnabled = !isEnabled;
-      
-      await chrome.runtime.sendMessage({
-        type: 'TOGGLE_LAYER'
-      });
-      
+    const newState = !isEnabled;
+    isEnabled = newState;
+    
+    if (!currentTab?.id) {
       updateUI();
-    } catch (e) {
-      console.error('Failed to toggle layer:', e);
+      return;
     }
+    
+    try {
+      await chrome.tabs.sendMessage(currentTab.id, {
+        type: newState ? 'APPLY_MODE' : 'DISABLE_LAYER',
+        mode: newState ? 'focus' : null
+      });
+    } catch (e) {}
+    
+    try {
+      await chrome.runtime.sendMessage({
+        type: 'TOGGLE_LAYER',
+        tabId: currentTab.id
+      });
+    } catch (e) {}
+    
+    updateUI();
   }
   
   async function selectMode(mode) {
+    activeMode = mode;
+    
+    if (!currentTab?.id) {
+      updateUI();
+      return;
+    }
+    
     try {
-      activeMode = mode;
-      
-      await chrome.runtime.sendMessage({
-        type: 'SET_MODE',
+      await chrome.tabs.sendMessage(currentTab.id, {
+        type: 'APPLY_MODE',
         mode: mode,
         rules: getModeRules(mode)
       });
-      
-      updateUI();
     } catch (e) {
-      console.error('Failed to set mode:', e);
+      try {
+        await chrome.runtime.sendMessage({
+          type: 'SET_MODE',
+          tabId: currentTab.id,
+          mode: mode,
+          rules: getModeRules(mode)
+        });
+      } catch (e2) {}
     }
+    
+    updateUI();
   }
   
   function getModeRules(mode) {
@@ -192,6 +220,19 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } catch (e) {
       console.error('Failed to update preferences:', e);
+    }
+  }
+  
+  async function detectWithAI() {
+    try {
+      const response = await chrome.tabs.sendMessage(currentTab.id, {
+        type: 'DETECT_INTENT'
+      });
+      if (response && response.mode) {
+        await selectMode(response.mode);
+      }
+    } catch (e) {
+      console.error('AI detection failed:', e);
     }
   }
   

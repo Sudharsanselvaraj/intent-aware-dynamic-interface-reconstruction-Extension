@@ -36,21 +36,17 @@ const RealityLayer = {
   },
   
   async handleMessage(message, sender) {
+    const tabId = message.tabId || sender.tab?.id;
+    
     switch (message.type) {
-      case 'ANALYZE_PAGE':
-        return await this.analyzePage(sender.tab.id, message.url);
-      
-      case 'GET_MODE':
-        return this.activeModes.get(sender.tab.id) || 'focus';
-      
       case 'SET_MODE':
-        return await this.setMode(sender.tab.id, message.mode, message.rules);
+        return await this.setMode(tabId, message.mode, message.rules);
       
       case 'GET_ANALYSIS':
-        return this.pageAnalysisCache.get(sender.tab.id);
+        return this.pageAnalysisCache.get(tabId);
       
       case 'TOGGLE_LAYER':
-        return await this.toggleLayer(sender.tab.id);
+        return await this.toggleLayer(tabId);
       
       case 'GET_PREFERENCES':
         return this.preferences;
@@ -68,7 +64,7 @@ const RealityLayer = {
         return await this.saveToGraph(message.data);
         
       case 'TOGGLE_SIDEBAR':
-        return await this.toggleSidebar(sender.tab.id);
+        return await this.toggleSidebar(tabId);
         
       case 'TOGGLE_COMPARE':
         return { success: true };
@@ -84,12 +80,14 @@ const RealityLayer = {
   
   async analyzePage(tabId, url) {
     try {
-      let pageTitle;
+      console.log('[Reality Layer] Analyzing page:', tabId, url);
+      
+      let pageTitle = '';
       try {
-        const response = await chrome.tabs.sendMessage(tabId, { type: 'GET_PAGE_TITLE' });
+        const response = await this.sendMessageWithRetry(tabId, { type: 'GET_PAGE_TITLE' }, 3);
         pageTitle = response?.title || '';
       } catch (e) {
-        pageTitle = '';
+        console.log('[Reality Layer] Content script not ready');
       }
       
       const analysis = {
@@ -107,18 +105,26 @@ const RealityLayer = {
       
       this.pageAnalysisCache.set(tabId, analysis);
       
-      await chrome.tabs.sendMessage(tabId, {
-        type: 'PAGE_ANALYSIS_COMPLETE',
-        analysis
-      });
+      try {
+        await this.sendMessageWithRetry(tabId, {
+          type: 'PAGE_ANALYSIS_COMPLETE',
+          analysis
+        }, 3);
+      } catch (e) {
+        console.log('[Reality Layer] Could not send analysis to content script');
+      }
       
       if (this.preferences.autoSuggest) {
         const suggestedMode = this.suggestMode(analysis);
-        await chrome.tabs.sendMessage(tabId, {
-          type: 'MODE_SUGGESTION',
-          mode: suggestedMode,
-          reason: this.getSuggestionReason(analysis)
-        });
+        try {
+          await this.sendMessageWithRetry(tabId, {
+            type: 'MODE_SUGGESTION',
+            mode: suggestedMode,
+            reason: this.getSuggestionReason(analysis)
+          }, 3);
+        } catch (e) {
+          console.log('[Reality Layer] Could not send mode suggestion');
+        }
       }
       
       return analysis;
@@ -167,27 +173,49 @@ const RealityLayer = {
   async setMode(tabId, mode, rules) {
     this.activeModes.set(tabId, { mode, rules, timestamp: Date.now() });
     
-    await chrome.tabs.sendMessage(tabId, {
-      type: 'APPLY_MODE',
-      mode,
-      rules
-    });
+    try {
+      await this.sendMessageWithRetry(tabId, {
+        type: 'APPLY_MODE',
+        mode,
+        rules
+      }, 3);
+    } catch (e) {
+      console.log('[Reality Layer] Content script not ready after retries');
+    }
     
     return { success: true, mode };
+  },
+  
+  async sendMessageWithRetry(tabId, message, retries = 3, delay = 300) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await chrome.tabs.sendMessage(tabId, message);
+      } catch (e) {
+        if (i < retries - 1) {
+          await new Promise(r => setTimeout(r, delay));
+        }
+      }
+    }
+    throw new Error('Failed after retries');
   },
   
   async toggleLayer(tabId) {
     const current = this.activeModes.get(tabId);
     if (current) {
       this.activeModes.delete(tabId);
-      await chrome.tabs.sendMessage(tabId, { type: 'DISABLE_LAYER' });
+      try {
+        await this.sendMessageWithRetry(tabId, { type: 'DISABLE_LAYER' }, 3);
+      } catch (e) {}
       return { enabled: false };
     }
+    await this.setMode(tabId, 'focus', []);
     return { enabled: true };
   },
   
   async toggleSidebar(tabId) {
-    await chrome.tabs.sendMessage(tabId, { type: 'TOGGLE_SIDEBAR' });
+    try {
+      await this.sendMessageWithRetry(tabId, { type: 'TOGGLE_SIDEBAR' }, 3);
+    } catch (e) {}
     return { success: true };
   },
   

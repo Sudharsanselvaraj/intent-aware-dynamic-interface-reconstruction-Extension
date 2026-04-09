@@ -14,8 +14,66 @@
       this.createOverlayContainer();
       this.setupMessageListener();
       this.setupMutationObserver();
+      this.setupNavigationListener();
+      this.loadPersistedMode();
       this.scanAndAnalyze();
-      console.log('[Reality Layer] Content script initialized');
+    },
+    
+    async loadPersistedMode() {
+      try {
+        const result = await chrome.storage.local.get(['currentMode', 'modeByDomain']);
+        const domain = window.location.hostname;
+        
+        if (result.currentMode) {
+          this.isEnabled = true;
+          this.currentMode = result.currentMode;
+          this.applyMode(this.currentMode);
+        }
+        
+        if (result.modeByDomain && result.modeByDomain[domain]) {
+          this.isEnabled = true;
+          this.currentMode = result.modeByDomain[domain];
+          this.applyMode(this.currentMode);
+        }
+      } catch (e) {}
+    },
+    
+    async saveMode(mode) {
+      this.currentMode = mode;
+      this.isEnabled = true;
+      
+      await chrome.storage.local.set({ currentMode: mode });
+      
+      const domain = window.location.hostname;
+      const result = await chrome.storage.local.get(['modeByDomain']);
+      const modeByDomain = result.modeByDomain || {};
+      modeByDomain[domain] = mode;
+      await chrome.storage.local.set({ modeByDomain });
+    },
+    
+    setupNavigationListener() {
+      let lastUrl = location.href;
+      
+      const checkUrlChange = () => {
+        if (location.href !== lastUrl) {
+          lastUrl = location.href;
+          this.onPageNavigation();
+        }
+      };
+      
+      setInterval(checkUrlChange, 1000);
+      
+      window.addEventListener('popstate', checkUrlChange);
+    },
+    
+    async onPageNavigation() {
+      const domain = window.location.hostname;
+      const result = await chrome.storage.local.get(['modeByDomain']);
+      
+      if (result.modeByDomain && result.modeByDomain[domain]) {
+        const savedMode = result.modeByDomain[domain];
+        this.applyMode(savedMode);
+      }
     },
     
     createOverlayContainer() {
@@ -29,18 +87,45 @@
     
     setupMessageListener() {
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        return this.handleMessage(message);
+        const response = this.processMessage(message);
+        if (sendResponse) {
+          sendResponse(response);
+        }
+        return true;
       });
     },
     
-    handleMessage(message) {
+    handleMessage(message, sender, sendResponse) {
+      const response = this.processMessage(message);
+      if (sendResponse) {
+        sendResponse(response);
+      }
+      return true;
+    },
+    
+    processMessage(message) {
       switch (message.type) {
         case 'APPLY_MODE':
           this.applyMode(message.mode, message.rules);
+          this.saveMode(message.mode);
           return { success: true };
         
         case 'DISABLE_LAYER':
           this.disableLayer();
+          return { success: true };
+        
+        case 'PAGE_ANALYSIS_COMPLETE':
+          return { success: true };
+        
+        case 'MODE_SUGGESTION':
+          this.showModeSuggestion(message.mode, message.reason);
+          return { success: true };
+        
+        case 'DETECT_INTENT':
+          return this.detectIntentWithAI();
+        
+        case 'SAVE_MODE':
+          this.saveMode(message.mode);
           return { success: true };
         
         case 'GET_STATE':
@@ -68,6 +153,49 @@
         default:
           return { error: 'Unknown message type' };
       }
+    },
+    
+    async detectIntentWithAI() {
+      if (typeof GeminiIntentDetector === 'undefined') {
+        return { mode: 'focus', confidence: 0, error: 'AI module not loaded' };
+      }
+      
+      const pageData = {
+        url: window.location.href,
+        title: document.title,
+        textContent: document.body.innerText.slice(0, 3000)
+      };
+      
+      const result = await GeminiIntentDetector.detectIntent(pageData);
+      
+      if (result.confidence > 0.5 && result.mode !== this.currentMode) {
+        this.showModeSuggestion(result.mode, result.reason);
+      }
+      
+      return result;
+    },
+    
+    showModeSuggestion(mode, reason) {
+      const suggestion = document.createElement('div');
+      suggestion.id = 'reality-layer-suggestion';
+      suggestion.innerHTML = `
+        <div class="rl-suggestion-content">
+          <span>Suggested mode: <strong>${mode}</strong> - ${reason}</span>
+          <button class="rl-accept-btn">Accept</button>
+          <button class="rl-dismiss-btn">Dismiss</button>
+        </div>
+      `;
+      
+      suggestion.querySelector('.rl-accept-btn').addEventListener('click', () => {
+        this.applyMode(mode);
+        suggestion.remove();
+      });
+      
+      suggestion.querySelector('.rl-dismiss-btn').addEventListener('click', () => {
+        suggestion.remove();
+      });
+      
+      document.body.appendChild(suggestion);
     },
     
     setupMutationObserver() {
@@ -384,9 +512,38 @@
     applyTransformations(rules) {
       this.createStyleElement();
       
+      let css = '';
       rules.forEach(rule => {
+        css += this.generateCSS(rule) + '\n';
         this.applyRule(rule);
       });
+      
+      this.styleElement.textContent = css;
+    }
+    
+    generateCSS(rule) {
+      const elements = document.querySelectorAll(rule.selector);
+      
+      switch (rule.action) {
+        case 'hide':
+          return `${rule.selector} { display: none !important; }`;
+        case 'dim':
+          return `${rule.selector} { opacity: 0.4; }`;
+        case 'highlight':
+          return `${rule.selector} { outline: 2px solid #6366f1 !important; outline-offset: 2px; }`;
+        case 'style':
+          return `${rule.selector} { ${rule.property}: ${rule.value} !important; }`;
+        case 'addTooltip':
+          return `${rule.selector} { cursor: help; }`;
+        case 'extractable':
+          return `${rule.selector} { border-left: 2px solid #6366f1; }`;
+        case 'trackable':
+          return `${rule.selector} { border-left: 2px solid #22c55e; }`;
+        case 'flag':
+          return `${rule.selector} { outline: 2px dashed #f59e0b !important; }`;
+        default:
+          return '';
+      }
     }
     
     createStyleElement() {
