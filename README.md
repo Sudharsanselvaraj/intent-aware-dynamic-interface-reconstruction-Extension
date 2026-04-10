@@ -1,6 +1,13 @@
-# Haveloc Guardian
+```text
+ ██╗  ██╗ █████╗ ██╗   ██╗███████╗██╗      ██████╗  ██████╗
+ ██║  ██║██╔══██╗██║   ██║██╔════╝██║     ██╔═══██╗██╔════╝
+ ███████║███████║██║   ██║█████╗  ██║     ██║   ██║██║
+ ██╔══██║██╔══██║╚██╗ ██╔╝██╔══╝  ██║     ██║   ██║██║
+ ██║  ██║██║  ██║ ╚████╔╝ ███████╗███████╗╚██████╔╝╚██████╗
+ ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚══════╝╚══════╝ ╚═════╝  ╚═════╝
 
-**Multi-Channel Placement Workflow & Scheduling Orchestration Core**
+                     G U A R D I A N
+```
 
 *24/7 Autonomous Email Intelligence · Real-Time Shortlist Detection · Zero-Miss Architecture*
 
